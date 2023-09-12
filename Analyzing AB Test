@@ -1,0 +1,60 @@
+import pandas as pd
+
+#Description
+"""
+A/B Testing for ShoeFly.com
+Our favorite online shoe store, ShoeFly.com is performing an A/B Test. They have two different versions of an ad, which they have placed in emails, as well as in banner ads on Facebook, Twitter, and Google. They want to know how the two ads are performing on each of the different platforms on each day of the week. Help them analyze the data using aggregate measures.
+"""
+ad_clicks = pd.read_csv('ad_clicks.csv')
+print(ad_clicks.head()) #Examine the first few rows
+
+print(ad_clicks.groupby('utm_source').user_id.count().reset_index())#which ad platform is getting you the most views
+
+ad_clicks['is_click'] = ~ad_clicks.ad_click_timestamp.isnull()
+print(ad_clicks.head()) #create new col to check the ad is clicked?
+
+clicks_by_source = ad_clicks.groupby(['utm_source','is_click']).user_id.count().reset_index() #groupy utm_source and is_click, countign the number of user_id's in each of those groups
+print(clicks_by_source)
+
+clicks_pivot = clicks_by_source.pivot(index ='utm_source',columns='is_click',values='user_id')#pivot the data so that the columns are is_click(either True or False), the index is utm_source, and the values are user_id.
+print(clicks_pivot)
+
+clicks_pivot['percent_clicked'] = clicks_pivot[True]/(clicks_pivot[False] + clicks_pivot[True])
+clicks_pivot.reset_index()
+print(clicks_pivot)#the percent of people who clicked on ads from each utm_source
+
+print(ad_clicks.groupby('experimental_group').user_id.count())#group by experimental_group and count the number of users.
+#we can see the number of Ad A was shown equal the number of Ad B
+experimental_shown = ad_clicks.groupby(['experimental_group','is_click']).user_id.count().reset_index()
+print(experimental_shown)#this dataframe show you the number of user clicked Ad on each and the number of user not clicked
+
+exp_pivot = experimental_shown.pivot(index='experimental_group',columns='is_click',values='user_id')
+print(exp_pivot)#this data just pivot from above data, just changed type
+
+exp_pivot['percentage_clicked'] = (exp_pivot[True]/(exp_pivot[True]+exp_pivot[False]))
+exp_pivot.reset_index()
+print(exp_pivot) #this data show you the percentage of users clicked on each Ad
+#=> we can see the percentage of Ad A is higher than Ad B
+#===============================#
+#The Product Manager for the A/B test thinks that the clicks might have changed by day of the week.
+a_clicks = ad_clicks[ad_clicks.experimental_group == 'A']
+b_clicks = ad_clicks[ad_clicks.experimental_group == 'B']
+#print(a_clicks,b_clicks) #use this codeline if u want u check data is True
+
+a_day_clicks = a_clicks.groupby(['day','is_click']).user_id.count().reset_index()
+b_day_clicks = b_clicks.groupby(['day','is_click']).user_id.count().reset_index()
+print(a_day_clicks,b_day_clicks)
+
+a_day_pivot = a_day_clicks.pivot(index='day',columns='is_click',values='user_id').reset_index()
+b_day_pivot = b_day_clicks.pivot(index='day',columns='is_click',values='user_id').reset_index()
+print(a_day_pivot,b_day_pivot)
+
+a_day_pivot['percentage_click'] = (a_day_pivot[True]/(a_day_pivot[True]+a_day_pivot[False]))
+a_day_pivot.reset_index()
+b_day_pivot['percentage_click'] = (b_day_pivot[True]/(b_day_pivot[True]+b_day_pivot[False]))
+b_day_pivot.reset_index()
+
+print(a_day_pivot,b_day_pivot)
+
+#As a infomation given from data, i find Ad A have the percentage higher in total and the most of each day
+#i recommend that our companu should use both Ad A and Ad B, increase the Ad A on the webside on Thursday
